@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Math 24">
+<title>Math 24 Solver</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', system-ui, sans-serif;
+    background: #0f0f1a;
+    color: #e8e8f0;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 16px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    background: linear-gradient(135deg, #f7971e, #ffd200);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .subtitle {
+    font-size: 14px;
+    color: #888;
+    margin-bottom: 28px;
+  }
+  .input-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    width: 100%;
+    max-width: 360px;
+    margin-bottom: 20px;
+  }
+  .input-grid input {
+    width: 100%;
+    height: 64px;
+    text-align: center;
+    font-size: 28px;
+    font-weight: 600;
+    border: 2px solid #2a2a3d;
+    border-radius: 16px;
+    background: #1a1a2e;
+    color: #fff;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -webkit-appearance: none;
+  }
+  .input-grid input:focus {
+    border-color: #f7971e;
+    box-shadow: 0 0 0 3px rgba(247, 151, 30, 0.2);
+  }
+  .btn-row {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+    max-width: 360px;
+    margin-bottom: 24px;
+  }
+  button {
+    flex: 1;
+    height: 52px;
+    border: none;
+    border-radius: 14px;
+    font-size: 17px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.2s;
+  }
+  button:active { transform: scale(0.96); }
+  .btn-solve {
+    background: linear-gradient(135deg, #f7971e, #ffd200);
+    color: #1a1a2e;
+  }
+  .btn-random {
+    background: #2a2a3d;
+    color: #ccc;
+  }
+  .btn-clear {
+    background: #2a2a3d;
+    color: #f44;
+    flex: 0.5;
+  }
+  .results {
+    width: 100%;
+    max-width: 360px;
+    flex: 1;
+  }
+  .results-header {
+    font-size: 13px;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+  .solution-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .solution-item {
+    background: #1a1a2e;
+    border: 1px solid #2a2a3d;
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 18px;
+    font-family: 'SF Mono', 'Menlo', monospace;
+    color: #d4d4f0;
+    word-break: break-word;
+  }
+  .solution-item.highlight {
+    border-color: #f7971e;
+    background: #1f1a10;
+    color: #ffd200;
+  }
+  .no-solution {
+    text-align: center;
+    color: #f44;
+    font-size: 18px;
+    margin-top: 20px;
+  }
+  .info {
+    text-align: center;
+    color: #555;
+    font-size: 14px;
+    margin-top: 20px;
+  }
+  .count-badge {
+    display: inline-block;
+    background: #2a2a3d;
+    color: #ffd200;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+</style>
+</head>
+<body>
+
+<h1>Math 24</h1>
+<p class="subtitle">Enter 4 numbers, find expressions that equal 24</p>
+
+<div class="input-grid">
+  <input type="number" id="n1" inputmode="numeric" pattern="[0-9]*" min="1" max="13" placeholder="?">
+  <input type="number" id="n2" inputmode="numeric" pattern="[0-9]*" min="1" max="13" placeholder="?">
+  <input type="number" id="n3" inputmode="numeric" pattern="[0-9]*" min="1" max="13" placeholder="?">
+  <input type="number" id="n4" inputmode="numeric" pattern="[0-9]*" min="1" max="13" placeholder="?">
+</div>
+
+<div class="btn-row">
+  <button class="btn-clear" onclick="clearAll()">Clear</button>
+  <button class="btn-random" onclick="randomNums()">Random</button>
+  <button class="btn-solve" onclick="solve()">Solve</button>
+</div>
+
+<div class="results" id="results"></div>
+
+<script>
+const inputs = [
+  document.getElementById('n1'),
+  document.getElementById('n2'),
+  document.getElementById('n3'),
+  document.getElementById('n4')
+];
+
+// Auto-advance to next input
+inputs.forEach((inp, i) => {
+  inp.addEventListener('input', () => {
+    if (inp.value.length >= 2) inp.value = inp.value.slice(0, 2);
+    if (inp.value.length >= 1 && i < 3) {
+      const v = parseInt(inp.value);
+      if (v >= 2 || inp.value.length === 2) inputs[i + 1].focus();
+    }
+  });
+});
+
+function clearAll() {
+  inputs.forEach(i => i.value = '');
+  document.getElementById('results').innerHTML = '';
+  inputs[0].focus();
+}
+
+function randomNums() {
+  inputs.forEach(i => i.value = Math.floor(Math.random() * 13) + 1);
+  solve();
+}
+
+function solve() {
+  const nums = inputs.map(i => parseInt(i.value));
+  if (nums.some(isNaN) || nums.some(n => n < 1 || n > 99)) {
+    document.getElementById('results').innerHTML = '<p class="info">Enter 4 numbers (1-99)</p>';
+    return;
+  }
+  const solutions = findAll24(nums);
+  const el = document.getElementById('results');
+  if (solutions.length === 0) {
+    el.innerHTML = '<p class="no-solution">No solution found</p>';
+    return;
+  }
+  const header = `<p class="results-header">Solutions <span class="count-badge">${solutions.length}</span></p>`;
+  const items = solutions.map((s, i) =>
+    `<li class="solution-item${i === 0 ? ' highlight' : ''}">${s} = 24</li>`
+  ).join('');
+  el.innerHTML = header + `<ul class="solution-list">${items}</ul>`;
+}
+
+function findAll24(nums) {
+  const ops = ['+', '-', '*', '/'];
+  const seen = new Set();
+  const results = [];
+
+  // Generate all permutations of 4 numbers
+  function perms(arr) {
+    if (arr.length <= 1) return [arr];
+    const res = [];
+    for (let i = 0; i < arr.length; i++) {
+      const rest = [...arr.slice(0, i), ...arr.slice(i + 1)];
+      for (const p of perms(rest)) res.push([arr[i], ...p]);
+    }
+    return res;
+  }
+
+  function calc(a, op, b) {
+    switch (op) {
+      case '+': return a + b;
+      case '-': return a - b;
+      case '*': return a * b;
+      case '/': return b !== 0 ? a / b : NaN;
+    }
+  }
+
+  const allPerms = perms(nums);
+
+  for (const [a, b, c, d] of allPerms) {
+    for (const o1 of ops) {
+      for (const o2 of ops) {
+        for (const o3 of ops) {
+          // Structure 1: ((a o1 b) o2 c) o3 d
+          let r = calc(calc(calc(a, o1, b), o2, c), o3, d);
+          if (Math.abs(r - 24) < 1e-9) {
+            const expr = `((${a} ${o1} ${b}) ${o2} ${c}) ${o3} ${d}`;
+            if (!seen.has(expr)) { seen.add(expr); results.push(expr); }
+          }
+
+          // Structure 2: (a o1 (b o2 c)) o3 d
+          r = calc(calc(a, o1, calc(b, o2, c)), o3, d);
+          if (Math.abs(r - 24) < 1e-9) {
+            const expr = `(${a} ${o1} (${b} ${o2} ${c})) ${o3} ${d}`;
+            if (!seen.has(expr)) { seen.add(expr); results.push(expr); }
+          }
+
+          // Structure 3: (a o1 b) o2 (c o3 d)
+          r = calc(calc(a, o1, b), o2, calc(c, o3, d));
+          if (Math.abs(r - 24) < 1e-9) {
+            const expr = `(${a} ${o1} ${b}) ${o2} (${c} ${o3} ${d})`;
+            if (!seen.has(expr)) { seen.add(expr); results.push(expr); }
+          }
+
+          // Structure 4: a o1 ((b o2 c) o3 d)
+          r = calc(a, o1, calc(calc(b, o2, c), o3, d));
+          if (Math.abs(r - 24) < 1e-9) {
+            const expr = `${a} ${o1} ((${b} ${o2} ${c}) ${o3} ${d})`;
+            if (!seen.has(expr)) { seen.add(expr); results.push(expr); }
+          }
+
+          // Structure 5: a o1 (b o2 (c o3 d))
+          r = calc(a, o1, calc(b, o2, calc(c, o3, d)));
+          if (Math.abs(r - 24) < 1e-9) {
+            const expr = `${a} ${o1} (${b} ${o2} (${c} ${o3} ${d}))`;
+            if (!seen.has(expr)) { seen.add(expr); results.push(expr); }
+          }
+        }
+      }
+    }
+  }
+
+  // Deduplicate equivalent expressions (keep unique readable ones)
+  // Sort: simpler expressions first
+  results.sort((a, b) => a.length - b.length);
+  return results;
+}
+
+// Start with random numbers
+randomNums();
+</script>
+
+</body>
+</html>
